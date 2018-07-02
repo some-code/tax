@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    *{
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    /* ============================================================
+      flex：定义布局为盒模型
+      flex-v：盒模型垂直布局
+      flex-1：子元素占据剩余的空间
+      flex-align-center：子元素垂直居中
+      flex-pack-center：子元素水平居中
+      flex-pack-justify：子元素两端对齐
+      兼容性：ios 4+、android 2.3+、winphone8+
+      ============================================================ */
+    .flex{display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;}
+    .flex-v{-webkit-box-orient:vertical;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;}
+    .flex-1{-webkit-box-flex:1;-webkit-flex:1;-ms-flex:1;flex:1;}
+    .flex-align-center{-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;}
+    .flex-pack-center{-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;}
+    .flex-pack-justify{-webkit-box-pack:justify;-webkit-justify-content:space-between;-ms-flex-pack:justify;justify-content:space-between;}
+
+    body{
+      background: #eee;
+    }
+    form{
+      max-width: 540px;
+      padding: 15px;
+      margin: 10px auto;
+      box-shadow: 0 0 4px #ccc;
+      background: #fff;
+    }
+    .form-item{
+      margin: 20px 0;
+    }
+    .form-item span{
+      margin-right: 10px;
+    }
+    table{
+      width: 100%;
+      border-collapse: collapse;
+	    border-spacing: 0
+    }
+    td,th{
+      padding: 5px 10px;
+      color: #333;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      text-align: left;
+    }
+    button{
+      margin: auto;
+      -webkit-appearance: none;
+      padding: 0;
+      border: 0;
+      outline: 0;
+      height: 40px;
+      color: #333;
+    }
+    button[type='submit']{
+      margin-right: 10px;
+      width: 80%;
+      background: aquamarine;
+      font-weight: bold;
+    }
+    input{
+      outline: 0;
+      border: 0;
+      border-bottom: 1px solid #f0f0f0;
+      padding: 10px 15px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <form id='form'>
+    <div class="form-item flex flex-align-center">
+      <span>税前收入</span>
+      <input type="tel" class='flex-1'>
+    </div>
+    <div class="form-item flex flex-align-center">
+      <span>五险一金</span>
+      <input type="tel" class='flex-1'>
+    </div>
+    <div class="form-item flex flex-align-center">
+      <span>其他抵扣</span>
+      <input type="tel" class='flex-1'>
+    </div>
+    <div class="form-item flex flex-align-center">
+      <button type='submit'>计算</button>
+      <button type='reset' class='flex-1'>重来</button>
+    </div>
+    <table class="form-item" id='output'>
+
+    </table>
+  </form>
+  <script>
+    var form = document.getElementById('form');
+    var output = document.getElementById('output');
+
+    var distance = [3000, 12000, 20000, 25000, 35000, 55000, 80000];
+    var scale = [3, 10, 20, 25, 30, 35, 45];
+
+    form.onreset = function() {
+      output.innerHTML = '';
+    }
+
+    form.onsubmit = function(e){
+      // 阻止表单提交
+      e.preventDefault();
+      // 计算应税所得
+      var money = [].slice
+      .call(this.elements)
+      .filter(function(i){return i.tagName==='INPUT'})
+      .map(function(i){return Number(i.value)})
+      .reduce(function(a,b){return a-b}) - 5000;
+
+      var tax = getTax(money);
+      var totalTaxMoney = tax.map(function(i){return Number(i.money)}).reduce(function(a,b){return a+b});
+      var totalTax = tax.map(function(i){return Number(i.tax)}).reduce(function(a,b){return a+b})/100;
+
+      var tableHead = '<thead><th>应税额(元)</th><th>纳税比例</th><th>税额(元)</th></thead>';
+      var tableBody = tax.map(function(i){
+        return '<tr><td>'+i.money+'</td><td>'+i.scale+'%</td><td>'+(i.tax/100)+'</td></tr>';
+      }).join('');
+      var tableFoot = '<tfoot><td colspan="2">总计：'+totalTaxMoney+'</td><td>税额：'+totalTax+'</td></tfoot>';
+
+      output.innerHTML = tableHead + tableBody + tableFoot;
+    }
+
+    function getTax(money) {
+      var tax = [];
+      var i = 0;
+
+      if(money <= 0) {
+        tax.push({
+          money: 0,
+          scale: 0,
+          tax: 0,
+        });
+        return tax;
+      }
+      if(money <= 3000) {
+        tax.push({
+          money: money,
+          scale: scale[0],
+          tax: money * scale[0],
+        });
+        return tax;
+      }
+
+      while(money > 0){
+        var currentDistance = distance[i];
+        var currentScale = scale[i];
+        money -= currentDistance;
+
+        tax.push({
+          money: currentDistance,
+          scale: currentScale,
+          tax: currentDistance * currentScale,
+        });
+
+        if(money < distance[i+1]){
+          tax.push({
+            money: money,
+            scale: scale[i+1],
+            tax: money * scale[i+1],
+          });
+          break;
+        }
+        i++;
+      }
+      return tax;
+    }
+  </script>
+</body>
+</html>
